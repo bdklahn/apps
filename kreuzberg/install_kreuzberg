@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+VERS="4.4.4"
+APPDIR="${PROJDIR:=$HOME}/apps/kreuzberg"
+mkdir -p $APPDIR && cd $APPDIR
+# module load curl || true
+
+curl -sL "https://github.com/kreuzberg-dev/kreuzberg/releases/download/v$VERS/kreuzberg-cli-x86_64-unknown-linux-musl.tar.gz" |
+tar -xvz --strip-components=1 &&
+chmod a+x kreuzberg lib/ld-musl-x86_64.so.1 &&
+./kreuzberg --version
