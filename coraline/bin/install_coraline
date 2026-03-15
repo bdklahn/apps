@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -e
+
+APPDIR="${PROJDIR:-$HOME}/apps/coraline"
+mkdir -p "$APPDIR/bin"
+
+# 1. Create a secure temporary directory for the entire lifecycle
+TEMP_DIR=$(mktemp -d)
+
+# 2. Ensure the OS cleans up the directory upon script exit (success or failure)
+trap 'rm -rvf "$TEMP_DIR" && echo "Temporary directory cleaned up."' EXIT
+
+# 3. Sandbox Pixi's runtime directories to the temporary folder
+export PIXI_HOME="$TEMP_DIR/home"
+export PIXI_CACHE_DIR="$TEMP_DIR/cache"
+
+# 4. Install Pixi ephemerally
+# PIXI_BIN_DIR limits the binary placement.
+# PIXI_NO_PATH_UPDATE=1 strictly prevents modifications to ~/.bashrc or ~/.zshrc.
+echo "Bootstrapping ephemeral Pixi..."
+curl -fsSL https://pixi.sh/install.sh | PIXI_BIN_DIR="$TEMP_DIR/bin" PIXI_NO_PATH_UPDATE=1 bash
+
+# 5. Execute the installation
+echo "Resolving toolchain and compiling..."
+"$TEMP_DIR/bin/pixi" exec \
+  --spec rust \
+  --spec gcc \
+  --spec gxx \
+  --spec binutils \
+  --spec openssl \
+  --spec pkg-config \
+  --spec make \
+  -- cargo install coraline --features embeddings --locked --root "$APPDIR"
+
+echo "Installation complete. Host system remains unpolluted."
